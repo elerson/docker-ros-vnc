@@ -1,9 +1,9 @@
 # This Dockerfile is used to build an ROS + VNC + Tensorflow image based on Ubuntu 18.04
-FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
+FROM nvidia/cuda:11.2.2-devel-ubuntu20.04
 
-LABEL maintainer "Henry Huang"
-MAINTAINER Henry Huang "https://github.com/henry2423"
-ENV REFRESHED_AT 2018-10-29
+LABEL maintainer "Elerson Santos"
+MAINTAINER Henry Huang "https://github.com/elerson"
+ENV REFRESHED_AT 2020-03-29
 
 # Install sudo
 RUN apt-get update && \
@@ -103,8 +103,8 @@ RUN apt-get update && \
 
 # Install ROS
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -cs` main" > /etc/apt/sources.list.d/ros-latest.list' && \
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116 && \
-    apt-get update && apt-get install -y ros-melodic-desktop && \
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 && \
+    apt-get update && apt-get install -y ros-noetic-desktop && \
     apt-get install -y python-rosinstall && \
     rosdep init
 
@@ -113,25 +113,14 @@ RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb
     wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add - && \
     apt-get update && \
     apt-get install -y gazebo9 libgazebo9-dev && \
-    apt-get install -y ros-melodic-gazebo-ros-pkgs ros-melodic-gazebo-ros-control
+    apt-get install -y ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control
 
 # Setup ROS
 USER $USER
 RUN rosdep fix-permissions && rosdep update
-RUN echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
+RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 RUN /bin/bash -c "source ~/.bashrc"
 
-###Tensorflow Installation
-# Install pip
-USER root
-RUN apt-get install -y wget python-pip python-dev libgtk2.0-0 unzip libblas-dev liblapack-dev libhdf5-dev && \
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python get-pip.py
-
-# prepare default python 2.7 environment
-USER root
-RUN pip install --ignore-installed --upgrade https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.11.0-cp27-none-linux_x86_64.whl && \
-    pip install keras==2.2.4 matplotlib pandas scipy h5py testresources scikit-learn
 
 # Expose Tensorboard
 EXPOSE 6006
