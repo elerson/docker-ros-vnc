@@ -12,6 +12,7 @@ RUN apt-get update && \
     curl
 
 # Configure user
+RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
 ARG user=ros
 ARG passwd=ros
 ARG uid=1000
@@ -28,6 +29,8 @@ RUN groupadd $USER && \
     # Replace 1000 with your user/group id
     usermod  --uid $UID $USER && \
     groupmod --gid $GID $USER
+
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends git cmake g++
 
 ### Install VScode
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg && \
@@ -104,29 +107,24 @@ RUN apt-get update && \
 # Install ROS
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -cs` main" > /etc/apt/sources.list.d/ros-latest.list' && \
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 && \
-    apt-get update && apt-get install -y ros-noetic-desktop && \
-    apt-get install -y python-rosinstall && \
-    rosdep init
+    apt-get update && apt-get install -y ros-noetic-desktop
+#&& \
+#    apt-get install -y python-rosinstall && \
+#    rosdep init
 
 # Install Gazebo
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list' && \
-    wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add - && \
-    apt-get update && \
-    apt-get install -y gazebo9 libgazebo9-dev && \
-    apt-get install -y ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control
+#RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-#stable.list' && \
+#    wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add - && \
+#    apt-get update && \
+#    apt-get install -y gazebo9 libgazebo9-dev && \
+#    apt-get install -y ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control
 
 # Setup ROS
 USER $USER
-RUN rosdep fix-permissions && rosdep update
+#RUN rosdep fix-permissions && rosdep update
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 RUN /bin/bash -c "source ~/.bashrc"
 
-
-# Expose Tensorboard
-EXPOSE 6006
-
-# Expose Jupyter 
-EXPOSE 8888
 
 ### Switch to root user to install additional software
 USER $USER
