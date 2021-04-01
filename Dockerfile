@@ -1,5 +1,5 @@
-# This Dockerfile is used to build an ROS + VNC + Tensorflow image based on Ubuntu 18.04  nvidia/cuda:11.2.2-devel-ubuntu20.04
-FROM adamrehn/ue4-runtime:20.04-vulkan-virtualgl
+# This Dockerfile is used to build an ROS + VNC + Tensorflow image based on Ubuntu 18.04
+FROM nvidia/cuda:11.2.2-devel-ubuntu20.04
 
 LABEL maintainer "Elerson Santos"
 MAINTAINER Henry Huang "https://github.com/elerson"
@@ -120,15 +120,66 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -cs` main" 
 #    apt-get install -y gazebo9 libgazebo9-dev && \
 #    apt-get install -y ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control
 
+
+
+
+# Disable interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+
+# Enable Vulkan support
+RUN apt-get update && apt-get install -y --no-install-recommends libvulkan1 && \
+	rm -rf /var/lib/apt/lists/* && \
+	VULKAN_API_VERSION=`dpkg -s libvulkan1 | grep -oP 'Version: [0-9|\.]+' | grep -oP '[0-9|\.]+'` && \
+	mkdir -p /etc/vulkan/icd.d/ && \
+	echo \
+	"{\
+		\"file_format_version\" : \"1.0.0\",\
+		\"ICD\": {\
+			\"library_path\": \"libGLX_nvidia.so.0\",\
+			\"api_version\" : \"${VULKAN_API_VERSION}\"\
+		}\
+	}" > /etc/vulkan/icd.d/nvidia_icd.json
+
+# Since UE4 refuses to run as the root user under Linux, create a non-root user
+RUN usermod -a -G audio,video $USER
+
+
+# Install the dependencies for VirtualGL
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	ca-certificates \
+	curl \
+	libfontconfig1 \
+	libfreetype6 \
+	libglu1 \
+	libsm6 \
+	libxcomposite1 \
+	libxcursor1 \
+	libxi6 \
+	libxrandr2 \
+	libxrender1 \
+	libxss1 \
+	libxv1 \
+	x11-xkb-utils \
+	xauth \
+	xfonts-base \
+	xkb-data && \
+rm -rf /var/lib/apt/lists/*
+
+# Install VirtualGL
+ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES},display
+ARG VIRTUALGL_VERSION=2.6.1
+RUN cd /tmp && \
+	curl -fsSL -O https://sourceforge.net/projects/virtualgl/files/${VIRTUALGL_VERSION}/virtualgl_${VIRTUALGL_VERSION}_amd64.deb && \
+	dpkg -i *.deb && \
+	rm -f /tmp/*.deb
+
 # Setup ROS
 USER $USER
 #RUN rosdep fix-permissions && rosdep update
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 RUN /bin/bash -c "source ~/.bashrc"
-
-
-### Switch to root user to install additional software
-USER $USER
 
 ENTRYPOINT ["/dockerstartup/vnc_startup.sh"]
 CMD ["--wait"]
