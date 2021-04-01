@@ -1,5 +1,5 @@
-# This Dockerfile is used to build an ROS + VNC + Tensorflow image based on Ubuntu 18.04
-FROM adamrehn/ue4-runtime:20.04-vulkan-virtualgl # nvidia/cuda:11.2.2-devel-ubuntu20.04
+# This Dockerfile is used to build an ROS + VNC + Tensorflow image based on Ubuntu 18.04  nvidia/cuda:11.2.2-devel-ubuntu20.04
+FROM adamrehn/ue4-runtime:20.04-vulkan-virtualgl
 
 LABEL maintainer "Elerson Santos"
 MAINTAINER Henry Huang "https://github.com/elerson"
